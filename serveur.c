@@ -1,22 +1,39 @@
-//creation d'un serveur et d'un client Hello World
-//serveur recoit Hello envoi world
-//utilisation de la bibliotheque zmq
-#include <zmq.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <assert.h>
+/*********************************************************/
+/*      Serveur qui envoie des donnees sur un port       */
+/*      publie des messages à differents clients         */
+/*      ce message contient des nombres aleatoire        */
+/*      representant la temperature et l'humidité        */
+/*                 d'une ville precise                   */
+/*********************************************************/
+
+#include "zhelper.h"
+
+
+
 int main(void){
-	void *ctx = zmq_ctx_new();//creation d'un contexte
-	void *resp =zmq_socket(ctx, ZMQ_REP);//creation d'une socket
-	int rc = zmq_bind(resp , "tcp://*:5555");//assignment du numero de port 
-	assert(rc ==0);//s'assurer que la connexion a etet faite 
 	
-	while(1){//boucle infinie 
-		char buffer[5];
-		zmq_recv(resp,buffer,5,0);//mettre les donnees recu dans une chaine  de caractere
-		printf("Message recu : %s\n",buffer);//afficher la chaine de caractere
-		sleep(1);
-		zmq_send(resp,"world",5,0);//envoie du mot world
+	void* context =zmq_ctx_new();
+	void *pub= zmq_socket(context,ZMQ_PUB);
+	//zmq_setsockopt(zmq.SNDHWM,0,0,0);
+	//zmq_setsockopt(RCVHWM,0,0,0);
+	int rc =zmq_bind(pub,"tcp://*:2223");
+	assert(rc == 0);
+	srandom(time(NULL));
+	while(1){
+		int code,temp,humid;
+		code = randof(100000);//generer un code aleatoire
+		temp =randof(215)-80;//generer une temperature aleatoire
+		humid= randof(50)+10;
+		char update[20];
+		sprintf(update,"%05d %03d %d",code,temp,humid);//convertir les nombres generés en une chaine de caractère
+		s_sleep(1000);
+		printf("la chaine de caractère envoryé est : %s\n",update);
+		//update[strlen(update)-1]='\0';
+		//zmq_send(pub,update,20,0);//envoie des donnees avec fonction zmq
+		s_send(pub,update);//envoie des donnees avec les fonction du ".h"
 	}
+	zmq_close(pub);
+	zmq_ctx_destroy(context);
 	return 0;
 }
+//ligne de compilation et d'excecution gcc -o serveur -lzmq serveur.c && clear && ./serveur
